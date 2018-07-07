@@ -330,6 +330,11 @@ namespace cjlogisticsChatBot
                             cacheList.luisEntities = "smsScenario";
                         }
 
+                        if (luisIntent.Equals("물량그룹건수조회"))
+                        {
+                            cacheList.luisEntities = "groupperentity";
+                        }
+
                         DButil.HistoryLog("luisEntities : " + luisEntities);
                         ///////////////////////////////////////////////////////////////////////
 
@@ -431,9 +436,13 @@ namespace cjlogisticsChatBot
 
 
                                 String param_intent = MessagesController.cacheList.luisIntent;
+                                Debug.WriteLine("param_intent===" + param_intent);
                                 String temp_paramEntities = null;
                                 String[] column_name = new String[] { "invoice_num1", "invoice_num2", "delivery_type", "part", "customer_name", "address_old", "address_new", "phone", "box_type", "commission_place", "etc", "customer_comment", "pay_type", "fees", "quantity", "book_type", "delivery_time", "delivery_status", "store_num", "store_name", "sm_num", "sm_name", "address_detail" };
-
+                                int above_data = 0;
+                                int below_data = 0;
+                                String show_fees = "";
+                                String show_address = "";
                                 if (param_intent.Equals("물량정보조회2") || param_intent.Equals("물량정보조회3") || param_intent.Equals("물량정보조회4") || param_intent.Equals("물량정보조회5"))
                                 {
                                     Debug.WriteLine("param_intent :: " + param_intent);
@@ -732,28 +741,26 @@ namespace cjlogisticsChatBot
                                 }
                                 else if (param_intent.Equals("물량그룹건수조회"))
                                 {
+                                    JArray compositEnties = new JArray();
+                                    compositEnties = dbutil.GetCompositEnities(orgMent);  //entities 가져오는 부분
+                                    Debug.WriteLine("*******************************full GetCompositEnities : " + compositEnties);
                                     String groupByParam = "";
-                                    String groupColumn = "";
-                                    for (var j = 0; j < entities.Count(); j++)
+                                    String whereParam = "";
+                                    String checkParamData = "";
+                                    String[] checkParamDataArray = null;
+                                    //groupby 및 column에 들어올 데이터
+                                    for (var j = 0; j < compositEnties.Count(); j++)
                                     {
+
                                         for (int ii = 0; ii < column_name.Length; ii++)
                                         {
-                                            if (entities[j]["type"].ToString().Equals(column_name[ii]))
+                                            if (compositEnties[j]["type"].ToString().Equals(column_name[ii]))
                                             {
-                                                String entity_data = entities[j]["entity"].ToString();
+                                                String entity_data = compositEnties[j]["value"].ToString();
                                                 entity_data = Regex.Replace(entity_data, " ", "");
-                                                groupColumn = groupColumn + entities[j]["type"].ToString() + ",";
-                                                groupByParam = groupByParam + entities[j]["type"].ToString() + "='" + entity_data + "'#";
+                                                groupByParam = groupByParam + compositEnties[j]["type"].ToString() + "',";
+                                                checkParamData = checkParamData + compositEnties[j]["type"].ToString() + "#";
                                             }
-                                        }
-
-                                        if (groupColumn==null|| groupColumn.Equals(""))
-                                        {
-
-                                        }
-                                        else
-                                        {
-                                            groupColumn = groupColumn.Substring(0, groupColumn.Length - 1);
                                         }
 
                                         if (groupByParam == null || groupByParam.Equals(""))
@@ -765,8 +772,113 @@ namespace cjlogisticsChatBot
                                             groupByParam = groupByParam.Substring(0, groupByParam.Length - 1);
                                         }
                                     }
-                                    //db select
+                                    //where절에 들어올 데이터
+                                    checkParamDataArray = checkParamData.Split(new string[] { "#" }, StringSplitOptions.None);
+                                    for (var j = 0; j < entities.Count(); j++)
+                                    {
+                                        for (int ii = 0; ii < column_name.Length; ii++)
+                                        {
+                                            if (entities[j]["type"].ToString().Equals(column_name[ii]))
+                                            {
 
+                                                String entity_type = entities[j]["type"].ToString();
+                                                String entity_data = entities[j]["entity"].ToString();
+                                                entity_data = Regex.Replace(entity_data, " ", "");
+
+                                                int temp = 0;
+                                                for (int a = 0; a < checkParamDataArray.Length; a++)
+                                                {
+                                                    if (checkParamDataArray[a].Equals(entity_type))
+                                                    {
+                                                        temp = 1;
+                                                    }
+                                                }
+
+                                                if (temp > 0)
+                                                {
+                                                    //groupby 에 있으니까 where 에는 없어야 한다.
+                                                }
+                                                else
+                                                {
+                                                    if (entity_type.Equals("address_old") || entity_type.Equals("address_new") || entity_type.Equals("address_detail"))//주소일때는 like 검색
+                                                    {
+                                                        show_address = entity_data;
+                                                        whereParam = whereParam + "REPLACE(" + entities[j]["type"].ToString() + ",' ','') like '%" + entity_data + "%'#";
+                                                    }
+                                                    else if ((entity_type.Equals("fees")))//이상, 이하처리
+                                                    {
+                                                        show_fees = entity_data;
+                                                        if (above_data > 0)
+                                                        {
+                                                            whereParam = whereParam + entities[j]["type"].ToString() + ">=" + entity_data + "#";
+                                                        }
+                                                        else if (below_data > 0)
+                                                        {
+                                                            whereParam = whereParam + entities[j]["type"].ToString() + "<=" + entity_data + "#";
+                                                        }
+                                                        else
+                                                        {
+                                                            whereParam = whereParam + entities[j]["type"].ToString() + "='" + entity_data + "'#";
+                                                        }
+                                                    }
+                                                    else if ((entity_type.Equals("delivery_type")))//유의어 처리(배달,배송)
+                                                    {
+                                                        if (entity_data.Equals("배송"))
+                                                        {
+                                                            entity_data = "배달";
+                                                        }
+                                                        whereParam = whereParam + entities[j]["type"].ToString() + "='" + entity_data + "'#";
+                                                    }
+                                                    else//나머지..
+                                                    {
+                                                        whereParam = whereParam + entities[j]["type"].ToString() + "='" + entity_data + "'#";
+                                                    }
+                                                }
+
+
+
+                                            }
+                                        }
+                                    }
+
+                                    String whereParamData = "";
+                                    if (whereParam == null || whereParam.Equals(""))
+                                    {
+
+                                    }
+                                    else
+                                    {
+                                        String[] whereParamArray = null;
+
+                                        whereParamArray = whereParam.Split(new string[] { "#" }, StringSplitOptions.None);
+                                        for (int aa = 0; aa < whereParamArray.Length; aa++)
+                                        {
+                                            whereParamData = whereParamData + whereParamArray[aa];
+                                        }
+                                    }
+
+                                    //db select
+                                    deliveryTypeList = new List<DeliveryTypeList>();
+                                    deliveryTypeList = db.SelectDeliveryGroupList(groupByParam, whereParamData);
+                                    String per_string = "";
+
+                                    if (deliveryTypeList == null)
+                                    {
+                                        per_string = "내용이 없습니다.";
+                                    }
+                                    else
+                                    {
+                                        per_string = "*`";
+                                        for (int bb = 0; bb < deliveryTypeList.Count; bb++)
+                                        {
+                                            per_string += deliveryTypeList[bb].delivery_type + ": " + deliveryTypeList[bb].type_count + "건,";
+                                        }
+                                        per_string += "`";
+                                    }
+                                    dlg.cardText = dlg.cardText.Replace("@PERSTRING@", per_string);
+                                    
+                                    tempAttachment = dbutil.getAttachmentFromDialog(dlg, activity);
+                                    commonReply.Attachments.Add(tempAttachment);
                                 }
                                 else if (param_intent.Equals("문자수신시나리오"))
                                 {
@@ -953,9 +1065,6 @@ namespace cjlogisticsChatBot
                                 }
                                 else
                                 {
-                                    int above_data = 0;
-                                    int below_data = 0;
-                                    String show_fees = "";
                                     for (var j = 0; j < entities.Count(); j++)
                                     {
 
@@ -978,8 +1087,9 @@ namespace cjlogisticsChatBot
                                                 String entity_data = entities[j]["entity"].ToString();
                                                 entity_data = Regex.Replace(entity_data, " ", "");
                                                 //temp_paramEntities = temp_paramEntities + entities[j]["type"].ToString() + "='" + entities[j]["entity"].ToString() + "',";
-                                                if (entity_type.Equals("address_old") || entity_type.Equals("address_new"))//주소일때는 like 검색
+                                                if (entity_type.Equals("address_old") || entity_type.Equals("address_new")|| entity_type.Equals("address_detail"))//주소일때는 like 검색
                                                 {
+                                                    show_address = entity_data;
                                                     temp_paramEntities = temp_paramEntities + "REPLACE(" + entities[j]["type"].ToString() + ",' ','') like '%" + entity_data + "%'#";
                                                 }
                                                 else if ((entity_type.Equals("fees")))//이상, 이하처리
@@ -1139,6 +1249,7 @@ namespace cjlogisticsChatBot
                                             dlg.cardText = dlg.cardText.Replace("@PAY_TYPE@", pay_type);
                                             dlg.cardText = dlg.cardText.Replace("@FEES@", fees);
                                             dlg.cardText = dlg.cardText.Replace("@SHOWFEES@", show_fees);
+                                            dlg.cardText = dlg.cardText.Replace("@SHOWADDRESS@", show_address);
                                             dlg.cardText = dlg.cardText.Replace("@QUANTITY@", quantity);
                                             dlg.cardText = dlg.cardText.Replace("@BOOK_TYPE@", book_type);
                                             dlg.cardText = dlg.cardText.Replace("@DELIVERY_TIME@", delivery_time);
@@ -1359,6 +1470,7 @@ namespace cjlogisticsChatBot
                                             dlg.cardText = dlg.cardText.Replace("@PAY_TYPE@", deliveryData[0].pay_type);
                                             dlg.cardText = dlg.cardText.Replace("@FEES@", deliveryData[0].fees);
                                             dlg.cardText = dlg.cardText.Replace("@SHOWFEES@", show_fees);
+                                            dlg.cardText = dlg.cardText.Replace("@SHOWADDRESS@", show_address);
                                             dlg.cardText = dlg.cardText.Replace("@QUANTITY@", deliveryData[0].quantity);
                                             dlg.cardText = dlg.cardText.Replace("@BOOK_TYPE@", deliveryData[0].book_type);
                                             dlg.cardText = dlg.cardText.Replace("@DELIVERY_TIME@", deliveryData[0].delivery_time);
@@ -1378,6 +1490,10 @@ namespace cjlogisticsChatBot
                                                     {
                                                         sub_info += "*` 송장번호 : " + deliveryData[i].invoice_num2;
                                                         sub_info += " ,이름 : " + deliveryData[i].customer_name + "`";
+                                                    }
+                                                    else
+                                                    {
+                                                        sub_info += "";
                                                     }
 
                                                 }
