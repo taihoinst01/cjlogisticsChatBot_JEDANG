@@ -1403,18 +1403,18 @@ namespace cjlogisticsChatBot
 
                                                 if (deliveryTypeList == null)
                                                 {
-                                                    type_string = "`*배달 :0건, 집화 :0건`";
+                                                    type_string = "* `배달 :0건, 집화 :0건`";
                                                 }
                                                 else
                                                 {
 
                                                     if (deliveryTypeList[0].delivery_type.Equals("집화"))
                                                     {
-                                                        type_string = "`*배달 :0건, 집화 :" + deliveryTypeList[0].type_count + "건`";
+                                                        type_string = "* `배달 :0건, 집화 :" + deliveryTypeList[0].type_count + "건`";
                                                     }
                                                     else
                                                     {
-                                                        type_string = "*`배달 :" + deliveryTypeList[0].type_count + "건, 집화 :0건`";
+                                                        type_string = "* `배달 :" + deliveryTypeList[0].type_count + "건, 집화 :0건`";
                                                     }
                                                 }
                                                 dlg.cardText = dlg.cardText.Replace("@TYPESTRING@", type_string);
@@ -1488,7 +1488,7 @@ namespace cjlogisticsChatBot
                                                 {
                                                     if (entities[a]["type"].ToString().Equals("delivery_info"))
                                                     {
-                                                        sub_info += "*` 송장번호 : " + deliveryData[i].invoice_num2;
+                                                        sub_info += "* `송장번호 : " + deliveryData[i].invoice_num2;
                                                         sub_info += " ,이름 : " + deliveryData[i].customer_name + "`";
                                                     }
                                                     else
@@ -1510,7 +1510,7 @@ namespace cjlogisticsChatBot
 
                                                 if (deliveryTypeList == null)
                                                 {
-                                                    type_string = "*`배달 :0건, 집화 :0건`";
+                                                    type_string = "* `배달 :0건, 집화 :0건`";
                                                 }
                                                 else
                                                 {
@@ -1518,16 +1518,16 @@ namespace cjlogisticsChatBot
                                                     {
                                                         if (deliveryTypeList[0].delivery_type.Equals("집화"))
                                                         {
-                                                            type_string = "*`배달 :0건, 집화 :" + deliveryTypeList[0].type_count + "건`";
+                                                            type_string = "* `배달 :0건, 집화 :" + deliveryTypeList[0].type_count + "건`";
                                                         }
                                                         else
                                                         {
-                                                            type_string = "*`배달 :" + deliveryTypeList[0].type_count + "건, 집화 :0건`";
+                                                            type_string = "* `배달 :" + deliveryTypeList[0].type_count + "건, 집화 :0건`";
                                                         }
                                                     }
                                                     else
                                                     {
-                                                        type_string = "*`배달 :" + deliveryTypeList[0].type_count + "건, 집화 :" + deliveryTypeList[1].type_count + "건`";
+                                                        type_string = "* `배달 :" + deliveryTypeList[0].type_count + "건, 집화 :" + deliveryTypeList[1].type_count + "건`";
                                                     }
 
                                                 }
