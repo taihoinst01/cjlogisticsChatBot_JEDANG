@@ -1682,7 +1682,14 @@ namespace cjlogisticsChatBot.DB
                 cmd.CommandText += " SELECT ISNULL(COUNT(DELIVERY_TYPE),0) AS TYPE_COUNT, " + groupByParam + " AS DELIVERY_TYPE";
                 cmd.CommandText += "    FROM TBL_DELIVERY_DATA";
                 cmd.CommandText += "    WHERE 1=1";
-                cmd.CommandText += "    AND " + whereParam;
+                if(whereParam==null|| whereParam.Equals(""))
+                {
+                    //nothing
+                }
+                else
+                {
+                    cmd.CommandText += "    AND " + whereParam;
+                }
                 cmd.CommandText += "    GROUP BY " + groupByParam;
 
                 //cmd.Parameters.AddWithValue("@strTime", strTime);
